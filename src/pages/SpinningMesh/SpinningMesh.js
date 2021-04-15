@@ -6,15 +6,22 @@ import {
   softShadows,
   MeshWobbleMaterial,
   OrbitControls,
+  Stars,
+  Html,
 } from '@react-three/drei';
 
 import { useSpring, a } from 'react-spring/three';
+import { Physics, useBox, usePlane } from '@react-three/cannon';
 
 softShadows();
 
 function Box({ position, args, color, speed }) {
-  const mesh = useRef(null);
-  useFrame(() => (mesh.current.rotation.x = mesh.current.rotation.y += 0.01));
+  // const ref = useRef(null);
+  const [ref, api] = useBox(() => ({ mass: 2 }));
+  // useFrame(() => (api.position.x = ref.current.rotation.y += 0.01));
+  // useFrame(({ clock }) =>
+  //   api.position.set(Math.sin(clock.getElapsedTime()) * 5, 1, 0),
+  // );
 
   const [expand, setExpand] = useState(false);
 
@@ -22,12 +29,16 @@ function Box({ position, args, color, speed }) {
     scale: expand ? [1.4, 1.4, 1.4] : [1, 1, 1],
   });
 
+  const onClick = () => {
+    api.velocity.set(0, 5, 10);
+  };
+
   return (
     <a.mesh
-      onClick={() => setExpand(!expand)}
+      onClick={onClick}
       scale={props.scale}
       castShadow
-      ref={mesh}
+      ref={ref}
       position={position}
     >
       <boxBufferGeometry attach='geometry' args={args} />
@@ -38,7 +49,27 @@ function Box({ position, args, color, speed }) {
         speed={speed}
         factor={0.6}
       />
+      <Html>
+        <span>box</span>
+      </Html>
     </a.mesh>
+  );
+}
+
+function Plane() {
+  const [planeRef] = usePlane(() => ({ rotation: [-Math.PI / 2, 0, 0] }));
+  return (
+    <group>
+      <mesh
+        ref={planeRef}
+        receiveShadow
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -3, 0]}
+      >
+        <planeBufferGeometry attach='geometry' args={[100, 100]} />
+        <meshLambertMaterial attach='material' color='gray' />
+      </mesh>
+    </group>
   );
 }
 
@@ -50,6 +81,7 @@ export default function SpinningMesh() {
         colorManagement
         camera={{ position: [-5, 2, 10], fov: 60 }}
       >
+        {/* <Stars /> */}
         <ambientLight intensity={0.5} />
         <directionalLight
           castShadow
@@ -65,26 +97,17 @@ export default function SpinningMesh() {
         />
         <pointLight position={[-10, 0, -20]} intensity={0.5} />
         <pointLight position={[0, -10, 0]} intensity={1.5} />
-
-        <group>
-          <mesh
-            receiveShadow
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -3, 0]}
-          >
-            <planeBufferGeometry attach='geometry' args={[100, 100]} />
-            <shadowMaterial attach='material' opacity={0.35} />
-          </mesh>
-        </group>
-
-        <Box
-          position={[0, 1, 0]}
-          args={[3, 2, 1]}
-          color='lightblue'
-          speed={2}
-        />
-        <Box position={[-2, 1, -5]} color='pink' speed={11} />
-        <Box position={[6, 1, -2]} color='gray' speed={11} />
+        <Physics>
+          <Plane />
+          <Box
+            position={[0, 1, 0]}
+            args={[3, 2, 1]}
+            color='lightblue'
+            speed={2}
+          />
+          <Box position={[-10, 10, -5]} color='pink' speed={11} />
+          <Box position={[10, 16, -2]} color='gray' speed={11} />
+        </Physics>
         <OrbitControls />
       </Canvas>
     </>
